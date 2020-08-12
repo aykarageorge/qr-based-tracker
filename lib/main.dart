@@ -1,3 +1,4 @@
+import 'add_customer.dart';
 import 'home.dart';
 import 'register.dart';
 import 'sign_in.dart';
@@ -12,16 +13,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Authentication',
+      title: 'Customer Tracker',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.yellow,
       ),
       initialRoute: Welcome.id,
       routes: {
         Welcome.id: (context) => Welcome(),
         Register.id: (context) => Register(),
         SignIn.id: (context) => SignIn(),
-        Home.id: (context) => Home()
+        Home.id: (context) => Home(),
+        AddCustomer.id: (context) => AddCustomer(),
       },
     );
   }

@@ -22,16 +22,16 @@ class _WelcomeState extends State<Welcome> {
           if (user == null) {
             return SignIn();
           }
-          print(user.email);
+          print(user.uid);
           return Home();
-        } else {
-          return Scaffold(
+        }
+      return Scaffold(
             body: Center(
               child: CircularProgressIndicator(),
             ),
           );
-        }
       },
     );
   }
+
 }
