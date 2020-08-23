@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:customer_register/add_customer.dart';
+import 'package:customer_register/profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/rendering.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -27,8 +29,8 @@ class _HomeState extends State<Home> {
   final _auth = FirebaseAuth.instance;
 
   List<CustomerData> customerLogs;
-  String username, uid, qrData;
-  bool showSpinner = true;
+  String estb, username, uid, qrData = "";
+  bool showSpinner = false;
 
   _HomeState(String message);
 
@@ -44,9 +46,8 @@ class _HomeState extends State<Home> {
     setState(() {
       username = _user.email;
       uid = _user.uid;
-      qrData = "Aykara4" + uid + username;
-      showSpinner = false;
     });
+    getQRData();
   }
 
   @override
@@ -92,7 +93,9 @@ class _HomeState extends State<Home> {
                               minWidth: 150,
                               height: 200,
                               child: MaterialButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.pushNamed(context, Profile.id);
+                                },
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -122,20 +125,24 @@ class _HomeState extends State<Home> {
                     child: Center(
                         child: Container(
                             width: 150,
-                            child: MaterialButton(
-                              onPressed: () => toQrImageData(qrData),
-                              child: Column(
-                                children: <Widget>[
-                                  QrImage(
-                                    data: "Aykara4" + uid + username,
-                                    version: QrVersions.auto,
+                            child: FutureBuilder(
+//                              future: getQR,
+                              builder: (context, snapshot) {
+                              return MaterialButton(
+                                onPressed: () => toQrImageData(qrData),
+                                child: Column(
+                                  children: <Widget>[
+                                    QrImage(
+                                      data: qrData,
+                                      version: QrVersions.auto,
 //                                    size: 150,
-                                    gapless: false,
-                                  ),
-                                  Text("Scan this QR or Tap on it to download.",
-                                      textAlign: TextAlign.center)
-                                ],
-                              ),
+                                      gapless: false,
+                                    ),
+                                    Text("Scan this QR or Tap on it to download.",
+                                        textAlign: TextAlign.center)
+                                  ],
+                                ),
+                              );},
                             ))),
                   ),
                   // Enter Customer Card
@@ -184,7 +191,7 @@ class _HomeState extends State<Home> {
             ),
             Expanded(
               child: FutureBuilder(
-                  future: getData(),
+                  future: getListData(),
                   builder: (context, snapshot) {
                     if (customerLogs != null) {
                       if (customerLogs.length == 0) {
@@ -259,11 +266,24 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Future getData() async {
+  Future getQRData() async {
+    await Firestore.instance
+        .collection('users')
+        .document(uid)
+        .get()
+        .then((value) => estb = value['establishment']);
+    print("ESTB: " + estb);
+      setState(() {
+        qrData = Uri.encodeFull("https://aykara4.com/safer?val=" +
+            json.encode({'establishment': estb, 'uid': uid}));
+      });
+      print("QR Data: " + qrData);
+  }
+
+  Future getListData() async {
     List<CustomerData> logs = new List();
     String name, contact, place, temperature, remarks;
     Timestamp time;
-
     await Firestore.instance
         .collection('users')
         .document(uid)
@@ -291,14 +311,14 @@ class _HomeState extends State<Home> {
       });
     });
 
-    print("List length: " + logs.length.toString());
     customerLogs = logs;
+    print("list length: " + customerLogs.length.toString());
   }
 
   void toQrImageData(String text) async {
     try {
       var status = await Permission.storage.request();
-      print(status.isGranted);
+      print("Permission: " + status.isGranted.toString());
       if (status.isGranted) {
         final image = await QrPainter(
           data: text,

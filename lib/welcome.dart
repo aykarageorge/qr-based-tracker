@@ -22,7 +22,7 @@ class _WelcomeState extends State<Welcome> {
           if (user == null) {
             return SignIn();
           }
-          print(user.uid);
+          print("User id: " + user.uid);
           return Home();
         }
       return Scaffold(

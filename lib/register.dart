@@ -16,6 +16,7 @@ class _RegisterState extends State<Register> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final firestoreInstance = Firestore.instance;
 
+  String name = "";
   String email;
   String password;
   String passwordConfirm;
@@ -35,6 +36,15 @@ class _RegisterState extends State<Register> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Spacer(flex: 8),
+                TextField(
+                  keyboardType: TextInputType.text,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(hintText: 'Establishment Name'),
+                  onChanged: (value) {
+                    name = value.toString().trim();
+                  },
+                ),
+                Spacer(),
                 TextField(
                   keyboardType: TextInputType.emailAddress,
                   textAlign: TextAlign.center,
@@ -120,21 +130,27 @@ class _RegisterState extends State<Register> {
               .collection("users")
               .document((await _auth.currentUser()).uid)
               .setData({
+            "establishment": name,
             "email": (await _auth.currentUser()).email,
             "last_login": Timestamp.now(),
           });
         }
       } catch (e) {
         print(e);
-        if (e.message != null) _displayDialog(context, e.message);
+        if (e.message != null) {
+          _displayDialog(context, e.message);
+          return;
+        }
       } finally {
         setState(() {
           showSpinner = false;
         });
-        _displayDialog(context, "An email has been sent for verification to the registered email. Please complete verification before logging in.\nThank You.");
+        _displayDialog(context,
+            "An email has been sent for verification to the registered email. Please complete verification before logging in.\nThank You.");
       }
     } else {
-      if (email == "" ||
+      if (name == "" ||
+          email == "" ||
           email == null ||
           password == "" ||
           password == null ||

@@ -1,3 +1,5 @@
+import 'package:customer_register/profile.dart';
+
 import 'add_customer.dart';
 import 'home.dart';
 import 'register.dart';
@@ -24,6 +26,7 @@ class MyApp extends StatelessWidget {
         SignIn.id: (context) => SignIn(),
         Home.id: (context) => Home(),
         AddCustomer.id: (context) => AddCustomer(),
+        Profile.id: (context) => Profile(),
       },
     );
   }
