@@ -7,7 +7,10 @@ import 'package:customer_register/add_customer.dart';
 import 'package:customer_register/profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -27,6 +30,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final _auth = FirebaseAuth.instance;
+  final String downloadPath = "/storage/emulated/0/Download/";
 
   List<CustomerData> customerLogs;
   String estb, username, uid, qrData = "";
@@ -128,21 +132,23 @@ class _HomeState extends State<Home> {
                             child: FutureBuilder(
 //                              future: getQR,
                               builder: (context, snapshot) {
-                              return MaterialButton(
-                                onPressed: () => toQrImageData(qrData),
-                                child: Column(
-                                  children: <Widget>[
-                                    QrImage(
-                                      data: qrData,
-                                      version: QrVersions.auto,
+                                return MaterialButton(
+                                  onPressed: () => toQrImageData(qrData),
+                                  child: Column(
+                                    children: <Widget>[
+                                      QrImage(
+                                        data: qrData,
+                                        version: QrVersions.auto,
 //                                    size: 150,
-                                      gapless: false,
-                                    ),
-                                    Text("Scan this QR or Tap on it to download.",
-                                        textAlign: TextAlign.center)
-                                  ],
-                                ),
-                              );},
+                                        gapless: false,
+                                      ),
+                                      Text(
+                                          "Scan this QR or Tap on it to download.",
+                                          textAlign: TextAlign.center)
+                                    ],
+                                  ),
+                                );
+                              },
                             ))),
                   ),
                   // Enter Customer Card
@@ -273,11 +279,11 @@ class _HomeState extends State<Home> {
         .get()
         .then((value) => estb = value['establishment']);
     print("ESTB: " + estb);
-      setState(() {
-        qrData = Uri.encodeFull("https://aykara4.com/safer?val=" +
-            json.encode({'establishment': estb, 'uid': uid}));
-      });
-      print("QR Data: " + qrData);
+    setState(() {
+      qrData = Uri.encodeFull("https://aykara4.com/safer?val=" +
+          json.encode({'establishment': estb, 'uid': uid}));
+    });
+    print("QR Data: " + qrData);
   }
 
   Future getListData() async {
@@ -330,8 +336,10 @@ class _HomeState extends State<Home> {
         final a = await image.toByteData(format: ImageByteFormat.png);
         final File newImage = File('/storage/emulated/0/Download/QR-code.png');
         await newImage.writeAsBytes(a.buffer.asUint8List());
-        _displayDialog(
-            context, "QR code image saved to 'Download' folder in device.");
+
+        generatePDF(a);
+        _displayDialog(context,
+            "QR code and PDF has been saved to 'Download' folder in device.");
       }
     } catch (e) {
       print(e);
@@ -355,6 +363,51 @@ class _HomeState extends State<Home> {
             ],
           );
         });
+  }
+
+  generatePDF(ByteData data) async {
+    final pdf = pw.Document();
+    final image = PdfImage.file(
+      pdf.document,
+      bytes: File(downloadPath + 'QR-code.png').readAsBytesSync(),
+    );
+
+    pdf.addPage(pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Center(
+              child: pw.Column(children: [
+            pw.Image(image),
+                pw.Text(
+                    "Scan this QR",
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            pw.Spacer(),
+            //English
+            pw.Text(
+                "Please scan the above QR code. Visit https://aykara4.com/safer to scan the code. If you already have a QR code scanner app, you can scan with it also.",
+                textAlign: pw.TextAlign.justify,
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Spacer(),
+            //Malayalam
+            pw.Text(
+                "Please scan the above QR code. Visit https://aykara4.com/safer to scan the code. If you already have a QR code scanner app, you can scan with it also.",
+                textAlign: pw.TextAlign.justify,
+                style: pw.TextStyle(fontSize: 16)),
+                pw.Spacer(),
+                pw.Text(
+                    "This system is powered by ® Aykara4",
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                    "For more information visit www.aykara4.com",
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 12)),
+          ])); // Center
+        })); // P
+
+    final file = File(downloadPath + "QR-notice.pdf");
+    await file.writeAsBytes(pdf.save());
   }
 }
 
